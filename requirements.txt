@@ -8,6 +8,7 @@ pydantic-settings
 
 # LLM + agents
 anthropic
+groq
 langgraph
 langchain-core
 

@@ -26,23 +26,46 @@ Paste this verbatim into a fresh `claude` session inside `/home/atif/projects/me
 ```
 Read HANDS-ON.md, README.md, and the per-project memory at
 ~/.claude/projects/-home-atif-projects-meridian/memory/project_meridian.md
-before doing anything. We are at the end of Phase 0 (scaffold complete). The
-next milestone is Phase 1: Layer 1 orchestrator wired up to a single Layer 2
-retrieval agent so one happy-path business goal completes end-to-end.
+before doing anything. We are at the end of Phase 1 (orchestrator + retrieval +
+synthesis happy path complete, mock smoke test passing). The next milestone is
+Phase 2: web/API agent, hybrid retrieval (pgvector + tsvector + RRF), and
+adversarial test fixtures with a replanner loop.
 
 Start by:
-1. Spinning up docker-compose (postgres + redis + langfuse) and confirming
-   all three ports respond.
-2. Creating `src/schemas/state.py` with the typed LangGraph state object.
-3. Creating `src/layer1_orchestrator/planner.py` with a Claude-Sonnet-backed
-   planner that decomposes a goal into a DAG of tasks.
-4. Creating `src/layer2_agents/retrieval_agent.py` with a single-shot
-   pgvector retrieval call (no tsvector yet, that lands in Phase 2).
-5. Wiring them together in `src/layer1_orchestrator/graph.py` and exposing
-   a POST /run endpoint in `src/api/main.py`.
+1. Adding tsvector column + GIN index to corpus_chunks; reseed via
+   `scripts/bootstrap_corpus.py`.
+2. Implementing Reciprocal Rank Fusion in `src/layer2_agents/retrieval_agent.py`
+   (merge pgvector and tsvector ranked lists with k=60).
+3. Building `src/layer2_agents/web_agent.py` (Tavily + generic httpx tool with
+   tenacity retry and timeout).
+4. Adding adversarial fixtures in `tests/e2e/test_adversarial.py` (broken tool,
+   ambiguous goal, retrieval conflict, incomplete data).
+5. Adding a replanner node to `src/layer1_orchestrator/graph.py` that loops
+   when any specialist reports failure.
 
-Adversarial cases, web agent, synthesis, memory, and observability come in
-later phases. Do not over-build Phase 1.
+Memory layer, observability, and judge come in later phases. Do not over-
+build Phase 2.
+```
+
+## Running Phase 1 locally
+
+```
+docker compose -f docker/docker-compose.yml up -d
+python -m venv .venv && .venv/bin/pip install -r requirements.txt
+.venv/bin/python -m scripts.bootstrap_corpus   # seed the pgvector corpus
+
+# Mock mode (no LLM key required, deterministic):
+LLM_PROVIDER=mock .venv/bin/python -m pytest tests/e2e/test_happy_path.py -v
+
+# Live mode (set ANTHROPIC_API_KEY or GROQ_API_KEY in .env first):
+LLM_PROVIDER=anthropic .venv/bin/python -m pytest tests/e2e/test_happy_path.py -v
+LLM_PROVIDER=groq      .venv/bin/python -m pytest tests/e2e/test_happy_path.py -v
+
+# API:
+.venv/bin/uvicorn src.api.main:app --reload --port 8030
+curl -X POST http://localhost:8030/run \
+     -H 'content-type: application/json' \
+     -d '{"goal":"Summarize what Meridian is and what models power its agents."}'
 ```
 
 ## Phase plan
@@ -57,14 +80,16 @@ later phases. Do not over-build Phase 1.
 - [x] `docs/ARCHITECTURE.md`, `docs/SCALING.md`, `docs/RUN_REPORT_SAMPLE.md` skeletons
 - [x] Per-project Claude memory dir populated
 
-### Phase 1: orchestrator + retrieval (single happy path)
+### Phase 1: orchestrator + retrieval (single happy path) (DONE 2026-05-08)
 
-- [ ] Typed LangGraph state object in `src/schemas/state.py`
-- [ ] Planner agent (Claude Sonnet) producing task DAG with acceptance criteria
-- [ ] Single retrieval agent against a small seeded pgvector corpus
-- [ ] Graph assembly in `src/layer1_orchestrator/graph.py`
-- [ ] `POST /run` endpoint accepting a goal, returning the final answer
-- [ ] Smoke test in `tests/e2e/test_happy_path.py`
+- [x] Typed LangGraph state object in `src/schemas/state.py`
+- [x] Planner agent (Claude Sonnet) producing task DAG with acceptance criteria
+- [x] Single retrieval agent against a small seeded pgvector corpus (`scripts/bootstrap_corpus.py`)
+- [x] Synthesis agent with provenance forwarding
+- [x] Graph assembly in `src/layer1_orchestrator/graph.py`
+- [x] `POST /run` endpoint accepting a goal, returning the final answer
+- [x] Smoke test in `tests/e2e/test_happy_path.py` (passes under `LLM_PROVIDER=mock`)
+- [x] LLM dispatcher in `src/llm.py` with anthropic + groq + mock backends
 
 ### Phase 2: web + synthesis + adversarial
 
