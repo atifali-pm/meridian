@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+
+# Type checkers / linters
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.pytype/
+
+# Env / secrets
+.env
+.env.local
+.env.*.local
+*.pem
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Docker volumes (local data)
+docker/volumes/
+docker/data/
+
+# Langfuse / Postgres / Redis local data
+postgres-data/
+redis-data/
+langfuse-data/
+
+# Project artifacts
+*.log
+logs/
+tmp/
+.cache/
+
+# Keep screenshots dir tracked but ignore stray .keep collisions
+screenshots/.keep

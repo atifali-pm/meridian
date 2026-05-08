@@ -1,0 +1,55 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: meridian-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: meridian
+      POSTGRES_PASSWORD: meridian
+      POSTGRES_DB: meridian
+    ports:
+      - "5455:5432"
+    volumes:
+      - meridian-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U meridian -d meridian"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: meridian-redis
+    restart: unless-stopped
+    ports:
+      - "6381:6379"
+    volumes:
+      - meridian-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  langfuse:
+    # Self-hosted Langfuse for traces, token usage, latency, retry events.
+    # Stub config; the build session will swap in the official compose snippet
+    # (langfuse-web + langfuse-worker + clickhouse + minio) when Phase 4 lands.
+    image: langfuse/langfuse:latest
+    container_name: meridian-langfuse
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://meridian:meridian@postgres:5432/meridian
+      NEXTAUTH_SECRET: change-me-in-phase-4
+      SALT: change-me-in-phase-4
+      NEXTAUTH_URL: http://localhost:3030
+      TELEMETRY_ENABLED: "false"
+    ports:
+      - "3030:3000"
+
+volumes:
+  meridian-postgres-data:
+  meridian-redis-data:

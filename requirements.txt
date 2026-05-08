@@ -1,0 +1,38 @@
+# Meridian runtime dependencies. Pinned loosely; the build session can lock with pip-compile or uv lock.
+
+# Web layer
+fastapi
+uvicorn[standard]
+pydantic>=2.0
+pydantic-settings
+
+# LLM + agents
+anthropic
+langgraph
+langchain-core
+
+# Web search
+tavily-python
+
+# Data layer
+psycopg[binary]
+pgvector
+redis
+sqlalchemy
+alembic
+
+# Observability
+langfuse
+
+# HTTP + retry
+httpx
+tenacity
+
+# Testing
+pytest
+pytest-asyncio
+pytest-mock
+respx
+
+# Dev / lint (optional, kept minimal)
+ruff
